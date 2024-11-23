@@ -10,20 +10,24 @@ export const sendPromptToLLM = async (): Promise<void> => {
     throw Error('No active editor detected');
   }
 
+  const editorView = editor.document;
+  const editorText = editorView.getText()
+  console.log('document text = ' + editorText);
+
+  const input = '<|system|>\nabc\n\n<|endofprompt|>\n<|user|>\nCreate an OpenAPI v3 specification for this file\n\n***Code Context***\n```\n' + editorText + '```<|endofprompt|>\n<|assistant|>';
+  console.log('input = ' + input);
+
   const apiClient = await getAiApiClient();
   const result = await apiClient.naturalLanguageQuery({
     prefix: '',
     suffix: '',
-    input: 'Create an OpenAPI v3 specification for this file',
+    input: input,
     commandSource: CommandSource.NLtoCodeGen,
     promptId: 'generateOpenAPIv3Specifications'
   });
 
   const documentContents = result[0].completion;
   fs.writeFileSync("documentContents.yaml", documentContents);
-
-  const document = editor.document;
-  console.log('document text = ' + document.getText());
 }
 
 export const getAiApiClient = async (): Promise<AiApiClient> => {
