@@ -18,7 +18,7 @@ export const sendPromptToLLM = async (): Promise<void> => {
 
   const userPrompt = 'Generate an OpenAPI v3 specification for my current Apex class. The OpenAPI v3 specification should be in YAML. The paths should be in the format of /{ClassName}/{MethodName} for the @AuraEnabled methods. When you return Id in a SOQL query, it has `type: Id`. For every `type: object`, generate a `#/components/schemas` entry for that object. The method should have a $ref entry pointing to the generated `#/components/schemas` entry. Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.'
 
-  const documentContents = await callLLM(systemPrompt, userPrompt, [editorText]);
+  const documentContents = await callLLM(systemPrompt, userPrompt, [editorText, 'Context 1', 'Context 2']);
 
   console.log('documentContents = ~' + documentContents + '~');
   fs.writeFileSync("documentContents.yaml", documentContents);
@@ -28,7 +28,7 @@ export const getAiApiClient = async (): Promise<AiApiClient> => {
   return ServiceProvider.getService(ServiceType.AiApiClient);
 };
 
-const callLLM = async (systemPrompt: string, userPrompt: string, context: [string]): Promise<string> => {
+const callLLM = async (systemPrompt: string, userPrompt: string, context: string[]): Promise<string> => {
 
   const llm = process.env.LLM;
   console.log('llm = ' + llm);
@@ -39,11 +39,17 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: [strin
     const userTag = '<|user|>';
     const assistantTag = '<|assistant|>';
 
-    const input =
+    let input =
     `${systemTag}\n${systemPrompt}\n\n${endOfPromptTag}\n${userTag}\n` +
     userPrompt +
     `\n\nThis is the Apex class the OpenAPI v3 specification should be generated for:\n\`\`\`\n` +
-    context[0] +
+    context[0];
+
+    for (let i = 1; i < context.length; i++) {
+      input += `\n\nContext ${i}:\n\`\`\`\n${context[i]}`;
+    }
+
+    input +=
     `\n\`\`\`\n${endOfPromptTag}\n${assistantTag}`;
     console.log('input = ' + input);
 
