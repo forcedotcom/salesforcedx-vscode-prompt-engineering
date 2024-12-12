@@ -96,6 +96,7 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
       documentContents = documentContents.substring(index);
     } else {
       console.log('Could not find "openapi" in documentContents');
+      return 'An OpenAPI v3 specification cannot be generated for this Apex class.';
     }
     documentContents = documentContents.replace(/```$/, '');
 
