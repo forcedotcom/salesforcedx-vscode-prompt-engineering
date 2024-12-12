@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGeneration } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
+import { DEFAULT_INSTRUCTIONS, ETHICS_INSTRUCTIONS } from './constants';
 
 export const sendPromptToLLM = async (): Promise<void> => {
   console.log('This is the sendPromptToLLM() method');
@@ -14,11 +15,11 @@ export const sendPromptToLLM = async (): Promise<void> => {
   const editorText = editorView.getText()
   console.log('document text = ' + editorText);
 
-  const systemPrompt = 'abc';
+  const systemPrompt = `${DEFAULT_INSTRUCTIONS}\n\n${ETHICS_INSTRUCTIONS}`
 
-  const userPrompt = 'Generate an OpenAPI v3 specification for my current Apex class. The OpenAPI v3 specification should be in YAML. The paths should be in the format of /{ClassName}/{MethodName} for the @AuraEnabled methods. When you return Id in a SOQL query, it has `type: Id`. For every `type: object`, generate a `#/components/schemas` entry for that object. The method should have a $ref entry pointing to the generated `#/components/schemas` entry. Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.'
+  const userPrompt = await constructUserPrompt(editorText);
 
-  const documentContents = await callLLM(systemPrompt, userPrompt, [editorText, 'Context 1', 'Context 2']);
+  const documentContents = await callLLM(systemPrompt, userPrompt, [editorText]);
 
   console.log('documentContents = ~' + documentContents + '~');
 
@@ -51,9 +52,9 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
     const assistantTag = '<|assistant|>';
 
     let input =
-    `${systemTag}\n${systemPrompt}\n\n${endOfPromptTag}\n${userTag}\n` +
+    `${systemTag}\n${systemPrompt}\n${endOfPromptTag}\n${userTag}\n` +
     userPrompt +
-    `\n\nThis is the Apex class the OpenAPI v3 specification should be generated for:\n\`\`\`\n` +
+    `\nThis is the Apex class the OpenAPI v3 specification should be generated for:\n\`\`\`\n` +
     context[0];
 
     for (let i = 1; i < context.length; i++) {
@@ -96,4 +97,22 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
   }
 
   return 'This shouldn\'t be reached';
+}
+
+const constructUserPrompt = async (editorText: string): Promise<string> => {
+  let userPrompt = '';
+
+  if (editorText.includes('@AuraEnabled')) {
+    userPrompt += 'Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.\n';
+  }
+
+  if (editorText.includes('@HttpGet') || editorText.includes('@HttpDelete')) {
+    userPrompt += 'Methods annotated with @HttpGet or @HttpDelete must have no parameters. This is because GET and DELETE requests have no request body, so there\'s nothing to deserialize.\n';
+  }
+
+  if (editorText.includes('SELECT Id')) {
+    userPrompt += 'When you return Id in a SOQL query, it has `type: Id`.\n';
+  }
+
+  return userPrompt;
 }
