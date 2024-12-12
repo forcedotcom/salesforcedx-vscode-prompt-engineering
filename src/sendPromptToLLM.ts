@@ -89,6 +89,16 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
       }
     }
 
+    // Remove the Markdown code block formatting
+    const index = documentContents.indexOf('openapi');
+    console.log('Index of "openapi" in documentContents:', index);
+    if (index !== -1) {
+      documentContents = documentContents.substring(index);
+    } else {
+      console.log('Could not find "openapi" in documentContents');
+    }
+    documentContents = documentContents.replace(/```$/, '');
+
     return documentContents;
   }
 
