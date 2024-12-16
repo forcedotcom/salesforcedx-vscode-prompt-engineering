@@ -46,7 +46,8 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",
-    "vscode-test": "^1.6.1"
+    "vscode-test": "^1.6.1",
+    "yaml": "2.6.1"
   },
   "packaging": {
     "assets": [
@@ -78,7 +79,8 @@
     "vscode:package": "npm run bundle:extension && ts-node  ./scripts/vsce-bundled-extension.ts",
     "vsix:install": "find ./ -name '*.vsix' -exec code --install-extension {} \\;",
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {} \\;",
-    "reformat": "node scripts/reformat-with-prettier.js"
+    "reformat": "node scripts/reformat-with-prettier.js",
+    "send-prompt-to-xgen-llm": "ts-node scripts/send-prompt-to-xgen-llm.ts"
   },
   "extensionDependencies": [
     "salesforce.salesforcedx-einstein-gpt"
