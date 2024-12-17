@@ -79,8 +79,7 @@
     "vscode:package": "npm run bundle:extension && ts-node  ./scripts/vsce-bundled-extension.ts",
     "vsix:install": "find ./ -name '*.vsix' -exec code --install-extension {} \\;",
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {} \\;",
-    "reformat": "node scripts/reformat-with-prettier.js",
-    "send-prompt-to-xgen-llm": "ts-node scripts/send-prompt-to-xgen-llm.ts"
+    "reformat": "node scripts/reformat-with-prettier.js"
   },
   "extensionDependencies": [
     "salesforce.salesforcedx-einstein-gpt"
@@ -92,15 +91,22 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "sf.send.prompt.to.llm",
+          "command": "sf.send.apex.prompt.to.llm",
+          "when": "sf:project_opened"
+        },
+        {
+          "command": "sf.send.yaml.prompt.to.llm",
           "when": "sf:project_opened"
         }
       ]
     },
     "commands": [
       {
-        "command": "sf.send.prompt.to.llm",
-        "title": "%send_prompt_to_llm_text%"
+        "command": "sf.send.apex.prompt.to.llm",
+        "title": "%send_apex_prompt_to_llm_text%"
+      },{
+        "command": "sf.send.yaml.prompt.to.llm",
+        "title": "%send_yaml_prompt_to_llm_text%"
       }
     ]
   }

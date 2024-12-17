@@ -3,8 +3,8 @@ import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGenera
 import * as fs from 'fs';
 import { DEFAULT_INSTRUCTIONS, ETHICS_INSTRUCTIONS } from './constants';
 
-export const sendPromptToLLM = async (): Promise<void> => {
-  console.log('This is the sendPromptToLLM() method');
+export const sendApexPromptToLLM = async (): Promise<void> => {
+  console.log('This is the sendApexPromptToLLM() method');
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     // notificationService.showErrorMessage('No active editor detected');
@@ -12,7 +12,7 @@ export const sendPromptToLLM = async (): Promise<void> => {
   }
 
   const editorView = editor.document;
-  const editorText = editorView.getText()
+  const editorText = editorView.getText();
   console.log('document text = ' + editorText);
 
   const systemPrompt = `${DEFAULT_INSTRUCTIONS}\n\n${ETHICS_INSTRUCTIONS}`

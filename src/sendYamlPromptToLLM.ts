@@ -1,18 +1,27 @@
+import * as vscode from 'vscode';
 import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGeneration } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 
-const sendPromptToLLM = async (promptFileName: string): Promise<void> => {
-  console.log('This is the sendPromptToLLM() method');
+export const sendYamlPromptToLLM = async (): Promise<void> => {
+  console.log('This is the sendYamlPromptToLLM() method');
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    // notificationService.showErrorMessage('No active editor detected');
+    throw Error('No active editor detected');
+  }
 
-  const promptText = fs.readFileSync(promptFileName, 'utf8');
-  console.log('document text = ' + promptText);
-  const promptYaml = YAML.parse(promptText);
+  const editorView = editor.document;
+  const editorText = editorView.getText();
+
+  console.log('document text = ' + editorText);
+  const promptYaml = YAML.parse(editorText);
 
   const experimentId = promptYaml.experiment;
-  const systemPrompt = promptYaml.systemPrompt;
+  const systemPrompt = promptYaml.systemPrompt.replace(/\\`/g, "`");
   const userPrompt = promptYaml.userPrompt;
   const context = promptYaml.context;
+  console.log('inside sendYamlPromptToLLM() - context = ' + context);
 
   const documentContents = await callLLM(systemPrompt, userPrompt, context);
 
@@ -35,25 +44,39 @@ export const getAiApiClient = async (): Promise<AiApiClient> => {
   return ServiceProvider.getService(ServiceType.AiApiClient);
 };
 
-const callLLM = async (systemPrompt: string, userPrompt: string, context: string[]): Promise<string> => {
+const callLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
+  console.log('inside callLLM() - context = ' + context);
+  console.log('inside callLLM() - context.length = ' + context.length);
+
   const systemTag = '<|system|>';
   const endOfPromptTag = '<|endofprompt|>';
   const userTag = '<|user|>';
   const assistantTag = '<|assistant|>';
 
   let input =
-  `${systemTag}\n${systemPrompt}\n${endOfPromptTag}\n${userTag}\n` +
-  userPrompt +
-  `\nThis is the Apex class the OpenAPI v3 specification should be generated for:\n\`\`\`\n` +
-  context[0];
+  `${systemTag}\n${systemPrompt}${endOfPromptTag}\n${userTag}\n` +
+  userPrompt + '\n';
 
-  for (let i = 1; i < context.length; i++) {
-    input += `\n\nContext ${i}:\n\`\`\`\n${context[i]}`;
+  for (let i = 0; i < context.length; i++) {
+    console.log('JSON.stringify(context[i]) = ' + JSON.stringify(context[i]));
+    const contextName = "context" + (i + 1);
+    console.log('JSON.stringify(context[i][contextName]text) = ' + context[i][contextName].text);
+    console.log('JSON.stringify(context[i].contextName.context) = ' + context[i][contextName].context);
+    input += (context[i][contextName].text + '\n' + context[i][contextName].context);
   }
 
   input +=
-  `\n\`\`\`\n${endOfPromptTag}\n${assistantTag}`;
+  `${endOfPromptTag}\n${assistantTag}`;
   console.log('input = ' + input);
+
+  // // Replace all occurrences of "\`" with "`"
+  // input = input.replace(/\\`/g, "`");
+
+  // let input = "This is a test string with \\`backticks\\`.";
+  // console.log('original input = ' + input);
+  // input = input.replace(/\\`/g, "`");
+
+  // console.log('new input = ' + input); // This is a test string with `backticks`.
 
   const apiClient = await getAiApiClient();
 
@@ -78,6 +101,7 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
       break;
     }
   }
+  console.log('--- documentContents = ' + documentContents);
 
   // Remove the Markdown code block formatting
   const index = documentContents.indexOf('openapi');
@@ -92,13 +116,3 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
 
   return documentContents;
 }
-
-// -------------------------------------------------------------------
-// Call the function with the prompt file name
-const promptFileName = process.argv[2];
-console.log('promptFileName = ' + promptFileName);
-if (!promptFileName) {
-  console.error('Prompt file name not provided.');
-  process.exit(1);
-}
-sendPromptToLLM(promptFileName).catch(console.error);

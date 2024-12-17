@@ -5,10 +5,13 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as vscode from 'vscode';
-import { sendPromptToLLM } from './sendPromptToLLM';
+import { sendApexPromptToLLM } from './sendApexPromptToLLM';
+import { sendYamlPromptToLLM } from './sendYamlPromptToLLM';
 
 const registerCommands = (): vscode.Disposable => {
-  return vscode.commands.registerCommand('sf.send.prompt.to.llm', sendPromptToLLM);
+  const sendApexPromptToLLMCmd =  vscode.commands.registerCommand('sf.send.apex.prompt.to.llm', sendApexPromptToLLM);
+  const sendYamlPromptToLLMCmd =  vscode.commands.registerCommand('sf.send.yaml.prompt.to.llm', sendYamlPromptToLLM);
+  return vscode.Disposable.from(sendApexPromptToLLMCmd, sendYamlPromptToLLMCmd);
 };
 
 export const activate = async (extensionContext: vscode.ExtensionContext) => {

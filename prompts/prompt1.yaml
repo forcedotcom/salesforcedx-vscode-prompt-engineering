@@ -23,8 +23,8 @@ userPrompt: |
 
 context:
   - context1:
-    - text: This is the Apex class for which the OpenAPI v3 specification should be generated.
-    - context: |
+      text: This is the Apex class for which the OpenAPI v3 specification should be generated.
+      context: |
         ```
         /**
         * This is an Apex class that does not contain any @AuraEnabled methods. Can an OpenAPI v3 specification be generated?
@@ -57,8 +57,8 @@ context:
         }
         ```
   - context2:
-    - text: The Apex class contains the Elephant__c custom object.
-    - context: |
+      text: The Apex class contains the Elephant__c custom object.
+      context: |
         ```
         Insert the metadata of the Elephant__c custom object here.
         ```
