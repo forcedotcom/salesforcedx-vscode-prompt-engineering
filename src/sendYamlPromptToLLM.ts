@@ -3,11 +3,17 @@ import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGenera
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 
+/**
+ * Reads a YAML file containing the prompt components.
+ * Calls callLLM() to send the prompt to the XGen LLM.
+ * Writes the response to a file.
+ *
+ * @throws Will throw an error if there is no active editor.
+ */
 export const sendYamlPromptToLLM = async (): Promise<void> => {
   console.log('This is the sendYamlPromptToLLM() method');
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    // notificationService.showErrorMessage('No active editor detected');
     throw Error('No active editor detected');
   }
 
@@ -40,10 +46,25 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
   fs.writeFileSync(documentContentsFileName, documentContents);
 }
 
+/**
+ * Get the AiApi client from the service provider.
+ *
+ * @returns {AiApiClient} The AiApi client.
+ */
 export const getAiApiClient = async (): Promise<AiApiClient> => {
   return ServiceProvider.getService(ServiceType.AiApiClient);
 };
 
+/**
+ * Builds the prompt in the format expected by the XGen LLM.
+ * Sends the prompt to the XGen LLM.
+ * Parses the response to only include the OpenAPI v3 specification.
+ *
+ * @param systemPrompt The grounding prompt.
+ * @param userPrompt The dynamic prompt that is generated based on the contents of the Apex class which the OpenAPI v3 specification should be generated for.
+ * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
+ * @returns The OpenAPI v3 specification for the Apex class.
+ */
 const callLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
   console.log('inside callLLM() - context = ' + context);
   console.log('inside callLLM() - context.length = ' + context.length);
@@ -60,23 +81,12 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: any): 
   for (let i = 0; i < context.length; i++) {
     console.log('JSON.stringify(context[i]) = ' + JSON.stringify(context[i]));
     const contextName = "context" + (i + 1);
-    console.log('JSON.stringify(context[i][contextName]text) = ' + context[i][contextName].text);
-    console.log('JSON.stringify(context[i].contextName.context) = ' + context[i][contextName].context);
     input += (context[i][contextName].text + '\n' + context[i][contextName].context);
   }
 
   input +=
   `${endOfPromptTag}\n${assistantTag}`;
   console.log('input = ' + input);
-
-  // // Replace all occurrences of "\`" with "`"
-  // input = input.replace(/\\`/g, "`");
-
-  // let input = "This is a test string with \\`backticks\\`.";
-  // console.log('original input = ' + input);
-  // input = input.replace(/\\`/g, "`");
-
-  // console.log('new input = ' + input); // This is a test string with `backticks`.
 
   const apiClient = await getAiApiClient();
 

@@ -7,7 +7,6 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
   console.log('This is the sendApexPromptToLLM() method');
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    // notificationService.showErrorMessage('No active editor detected');
     throw Error('No active editor detected');
   }
 
