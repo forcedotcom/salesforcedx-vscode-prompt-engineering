@@ -24,7 +24,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
   const promptYaml = YAML.parse(editorText);
 
   const experimentId = promptYaml.experiment;
-  const systemPrompt = promptYaml.systemPrompt.replace(/\\`/g, "`");
+  const systemPrompt = promptYaml.systemPrompt;
   const userPrompt = promptYaml.userPrompt;
   const context = promptYaml.context;
   console.log('inside sendYamlPromptToLLM() - context = ' + context);

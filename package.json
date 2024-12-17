@@ -93,9 +93,11 @@
         {
           "command": "sf.send.apex.prompt.to.llm",
           "when": "sf:project_opened"
-        },
-        {
+        },{
           "command": "sf.send.yaml.prompt.to.llm",
+          "when": "sf:project_opened"
+        },{
+          "command": "sf.generate.sample.yaml.prompt",
           "when": "sf:project_opened"
         }
       ]
@@ -107,6 +109,9 @@
       },{
         "command": "sf.send.yaml.prompt.to.llm",
         "title": "%send_yaml_prompt_to_llm_text%"
+      },{
+        "command": "sf.generate.sample.yaml.prompt",
+        "title": "%generate_sample_yaml_prompt_text%"
       }
     ]
   }

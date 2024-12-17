@@ -7,11 +7,50 @@
 import * as vscode from 'vscode';
 import { sendApexPromptToLLM } from './sendApexPromptToLLM';
 import { sendYamlPromptToLLM } from './sendYamlPromptToLLM';
+import { generateSampleYamlPrompt } from './generateSampleYamlPrompt';
+import * as fs from 'fs';
+import * as path from "path";
 
 const registerCommands = (): vscode.Disposable => {
   const sendApexPromptToLLMCmd =  vscode.commands.registerCommand('sf.send.apex.prompt.to.llm', sendApexPromptToLLM);
   const sendYamlPromptToLLMCmd =  vscode.commands.registerCommand('sf.send.yaml.prompt.to.llm', sendYamlPromptToLLM);
-  return vscode.Disposable.from(sendApexPromptToLLMCmd, sendYamlPromptToLLMCmd);
+
+  const generateSampleYamlPromptCmd = vscode.commands.registerCommand('sf.generate.sample.yaml.prompt', async () => {
+    const filename = await vscode.window.showInputBox({
+      prompt: 'Enter the filename for the YAML file',
+      placeHolder: 'sampleprompt',
+      value: 'sampleprompt'
+    });
+    if (!filename) {
+      vscode.window.showErrorMessage('Filename is required.');
+      return;
+    }
+
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    const defaultFolder = workspaceFolders ? path.join(workspaceFolders[0].uri.fsPath, 'experiments') : '';
+    const uri = await vscode.window.showOpenDialog({
+      defaultUri: vscode.Uri.file(defaultFolder),
+      canSelectFolders: true,
+      canSelectFiles: false,
+      openLabel: 'Select Folder'
+    });
+    if (!uri || uri.length === 0) {
+      vscode.window.showErrorMessage('Filepath is required.');
+      return;
+    }
+
+    const filepath = uri[0].fsPath;
+    const fullFilePath = `${filepath}/${filename}.yaml`;
+
+    if (fs.existsSync(fullFilePath)) {
+      vscode.window.showErrorMessage(`File '${filename}.yaml' already exists at '${filepath}'.`);
+      return;
+    }
+    await generateSampleYamlPrompt(`${filepath}/${filename}.yaml`);
+    vscode.window.showInformationMessage(`YAML file '${filename}.yaml' created successfully at '${filepath}'.`);
+  });
+
+  return vscode.Disposable.from(sendApexPromptToLLMCmd, sendYamlPromptToLLMCmd, generateSampleYamlPromptCmd);
 };
 
 export const activate = async (extensionContext: vscode.ExtensionContext) => {
