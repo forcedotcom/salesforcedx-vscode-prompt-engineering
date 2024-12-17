@@ -12,38 +12,59 @@ import * as YAML from 'yaml';
  */
 export const sendYamlPromptToLLM = async (): Promise<void> => {
   console.log('This is the sendYamlPromptToLLM() method');
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) {
-    throw Error('No active editor detected');
+
+  try {
+    // Show running notification to the user
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'SFDX: Send Prompt in Current YAML File to LLM',
+        cancellable: false
+      },
+      async progress => {
+        progress.report({ message: 'Running...' });
+
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          throw Error('No active editor detected');
+        }
+
+        const editorView = editor.document;
+        const editorText = editorView.getText();
+
+        console.log('document text = ' + editorText);
+        const promptYaml = YAML.parse(editorText);
+
+        const experimentId = promptYaml.experiment;
+        const systemPrompt = promptYaml.systemPrompt;
+        const userPrompt = promptYaml.userPrompt;
+        const context = promptYaml.context;
+        console.log('inside sendYamlPromptToLLM() - context = ' + context);
+
+        const documentContents = await callLLM(systemPrompt, userPrompt, context);
+
+        console.log('documentContents = ~' + documentContents + '~');
+
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const year = now.getFullYear();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const formattedDate = `${month}${day}${year}_${hours}:${minutes}:${seconds}`;
+
+        let documentContentsFileName = `documentContents_${experimentId}_${formattedDate}.yaml`;
+        fs.writeFileSync(documentContentsFileName, documentContents);
+      }
+    );
+
+    // Show success notification to the user
+    vscode.window.showInformationMessage('SFDX: Send Prompt in Current YAML File to LLM command completed successfully.');
+  } catch (error) {
+    // Show failure notification to the user
+    vscode.window.showErrorMessage('SFDX: Send Prompt in Current YAML File to LLM command failed: ' + error.message);
   }
-
-  const editorView = editor.document;
-  const editorText = editorView.getText();
-
-  console.log('document text = ' + editorText);
-  const promptYaml = YAML.parse(editorText);
-
-  const experimentId = promptYaml.experiment;
-  const systemPrompt = promptYaml.systemPrompt;
-  const userPrompt = promptYaml.userPrompt;
-  const context = promptYaml.context;
-  console.log('inside sendYamlPromptToLLM() - context = ' + context);
-
-  const documentContents = await callLLM(systemPrompt, userPrompt, context);
-
-  console.log('documentContents = ~' + documentContents + '~');
-
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const year = now.getFullYear();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  const formattedDate = `${month}${day}${year}_${hours}:${minutes}:${seconds}`;
-
-  let documentContentsFileName = `documentContents_${experimentId}_${formattedDate}.yaml`;
-  fs.writeFileSync(documentContentsFileName, documentContents);
 }
 
 /**
