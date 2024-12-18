@@ -94,10 +94,10 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: any): 
   `${systemTag}\n${systemPrompt}${endOfPromptTag}\n${userTag}\n` +
   userPrompt + '\n';
 
-  input += context.reduce((acc, curr, index) => {
+  input += context.reduce((acc: string, curr: any, index: number) => {
     const contextName = "context" + (index + 1);
     return acc + (curr[contextName].text + '\n' + curr[contextName].context);
-}, input);
+  }, '');
 
   input +=
   `${endOfPromptTag}\n${assistantTag}`;
