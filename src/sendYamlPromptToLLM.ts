@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGeneration } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
+import * as path from "path";
 
 /**
  * Reads a YAML file containing the prompt components.
@@ -29,6 +30,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
           throw Error('No active editor detected');
         }
 
+        const editorFilename = path.parse(editor.document.fileName).name;
         const editorView = editor.document;
         const editorText = editorView.getText();
 
@@ -49,7 +51,19 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         const isoString = now.toISOString();
         const formattedDate = isoString.replace(/[:.-]/g, '').replace('T', '_').replace('Z', '');
 
-        const documentContentsFileName = `documentContents_${experimentId}_${formattedDate}.yaml`;
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+          throw new Error('No workspace folder is open');
+        }
+        const rootPath = workspaceFolders[0].uri.fsPath;
+
+        const resultsDir = path.join(rootPath, 'results');
+        if (!fs.existsSync(resultsDir)) {
+          fs.mkdirSync(resultsDir);
+        }
+
+        const documentContentsFileName = path.join(resultsDir, `documentContents_${editorFilename}_${formattedDate}.yaml`);
+        console.log('documentContentsFileName = ' + documentContentsFileName);
         fs.writeFileSync(documentContentsFileName, documentContents);
       }
     );
