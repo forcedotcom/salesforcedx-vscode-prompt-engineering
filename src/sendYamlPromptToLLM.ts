@@ -46,15 +46,10 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         console.log('documentContents = ~' + documentContents + '~');
 
         const now = new Date();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const year = now.getFullYear();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        const formattedDate = `${month}${day}${year}_${hours}:${minutes}:${seconds}`;
+        const isoString = now.toISOString();
+        const formattedDate = isoString.replace(/[:.-]/g, '').replace('T', '_').replace('Z', '');
 
-        let documentContentsFileName = `documentContents_${experimentId}_${formattedDate}.yaml`;
+        const documentContentsFileName = `documentContents_${experimentId}_${formattedDate}.yaml`;
         fs.writeFileSync(documentContentsFileName, documentContents);
       }
     );
@@ -99,11 +94,10 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: any): 
   `${systemTag}\n${systemPrompt}${endOfPromptTag}\n${userTag}\n` +
   userPrompt + '\n';
 
-  for (let i = 0; i < context.length; i++) {
-    console.log('JSON.stringify(context[i]) = ' + JSON.stringify(context[i]));
-    const contextName = "context" + (i + 1);
-    input += (context[i][contextName].text + '\n' + context[i][contextName].context);
-  }
+  input += context.reduce((acc, curr, index) => {
+    const contextName = "context" + (index + 1);
+    return acc + (curr[contextName].text + '\n' + curr[contextName].context);
+}, input);
 
   input +=
   `${endOfPromptTag}\n${assistantTag}`;

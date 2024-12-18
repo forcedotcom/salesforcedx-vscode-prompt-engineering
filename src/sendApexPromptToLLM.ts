@@ -31,7 +31,7 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
   const seconds = String(now.getSeconds()).padStart(2, '0');
   const formattedDate = `${month}${day}${year}_${hours}:${minutes}:${seconds}`;
 
-  let documentContentsFileName = `documentContents_${formattedDate}.yaml`;
+  const documentContentsFileName = `documentContents_${formattedDate}.yaml`;
   fs.writeFileSync(documentContentsFileName, documentContents);
 }
 
