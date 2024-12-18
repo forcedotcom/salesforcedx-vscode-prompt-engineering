@@ -3,6 +3,13 @@ import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGenera
 import * as fs from 'fs';
 import { DEFAULT_INSTRUCTIONS, ETHICS_INSTRUCTIONS } from './constants';
 
+/**
+ * Reads the Apex file for which the OpenAPI v3 specification should be generated.
+ * Calls callLLM() to send the prompt to the XGen LLM.
+ * Writes the response to a file.
+ *
+ * @throws Will throw an error if there is no active editor.
+ */
 export const sendApexPromptToLLM = async (): Promise<void> => {
   console.log('This is the sendApexPromptToLLM() method');
   const editor = vscode.window.activeTextEditor;
@@ -35,10 +42,25 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
   fs.writeFileSync(documentContentsFileName, documentContents);
 }
 
+/**
+ * Gets the AiApi client from the service provider.
+ *
+ * @returns {AiApiClient} The AiApi client.
+ */
 export const getAiApiClient = async (): Promise<AiApiClient> => {
   return ServiceProvider.getService(ServiceType.AiApiClient);
 };
 
+/**
+ * Builds the prompt in the format expected by the LLM specified in the environment variable.
+ * Sends the prompt to the specified LLM.
+ * Parses the response to only include the OpenAPI v3 specification.
+ *
+ * @param systemPrompt The grounding prompt.
+ * @param userPrompt The dynamic prompt that is generated based on the contents of the Apex class which the OpenAPI v3 specification should be generated for.
+ * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
+ * @returns The OpenAPI v3 specification for the Apex class.
+ */
 const callLLM = async (systemPrompt: string, userPrompt: string, context: string[]): Promise<string> => {
 
   const llm = process.env.LLM;
@@ -109,6 +131,12 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: string
   return 'This shouldn\'t be reached';
 }
 
+/**
+ * Constructs the user prompt based on the contents of the Apex class for which the OpenAPI v3 specification needs to be generated.
+ *
+ * @param editorText The contents of the Apex class.
+ * @returns The user prompt.
+ */
 const constructUserPrompt = async (editorText: string): Promise<string> => {
   let userPrompt = '';
 

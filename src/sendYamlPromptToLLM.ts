@@ -63,7 +63,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
 }
 
 /**
- * Get the AiApi client from the service provider.
+ * Gets the AiApi client from the service provider.
  *
  * @returns {AiApiClient} The AiApi client.
  */
