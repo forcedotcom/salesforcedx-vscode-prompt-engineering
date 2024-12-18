@@ -48,8 +48,13 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         console.log('documentContents = ~' + documentContents + '~');
 
         const now = new Date();
-        const isoString = now.toISOString();
-        const formattedDate = isoString.replace(/[:.-]/g, '').replace('T', '_').replace('Z', '');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const year = now.getFullYear();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const formattedDate = `${month}${day}${year}_${hours}:${minutes}:${seconds}`;
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
