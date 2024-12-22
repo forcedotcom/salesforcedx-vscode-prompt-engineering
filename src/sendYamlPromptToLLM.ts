@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, AiApiClient, CommandSource, processGeneration } from '@salesforce/vscode-service-provider';
+import { ServiceProvider, ServiceType, LLMServiceInterface, ServiceInstanceValidators } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 import * as path from "path";
 
 /**
  * Reads a YAML file containing the prompt components.
- * Calls callLLM() to send the prompt to the XGen LLM.
+ * Calls buildPromptAndCallLLM() to send the prompt to the XGen LLM.
  * Writes the response to a file.
  *
  * @throws Will throw an error if there is no active editor.
@@ -42,7 +42,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         const context = promptYaml.context;
         console.log('inside sendYamlPromptToLLM() - context = ' + context);
 
-        const documentContents = await callLLM(systemPrompt, userPrompt, context);
+        const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
 
         console.log('documentContents = ~' + documentContents + '~');
 
@@ -81,15 +81,6 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
 }
 
 /**
- * Gets the AiApi client from the service provider.
- *
- * @returns {AiApiClient} The AiApi client.
- */
-export const getAiApiClient = async (): Promise<AiApiClient> => {
-  return ServiceProvider.getService(ServiceType.AiApiClient);
-};
-
-/**
  * Builds the prompt in the format expected by the XGen LLM.
  * Sends the prompt to the XGen LLM.
  * Parses the response to only include the OpenAPI v3 specification.
@@ -99,10 +90,11 @@ export const getAiApiClient = async (): Promise<AiApiClient> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
-const callLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
-  console.log('inside callLLM() - context = ' + context);
-  console.log('inside callLLM() - context.length = ' + context.length);
+const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
+  console.log('inside buildPromptAndCallLLM() - context = ' + context);
+  console.log('inside buildPromptAndCallLLM() - context.length = ' + context.length);
 
+  // Construct the input prompt to be sent to the LLM
   const systemTag = '<|system|>';
   const endOfPromptTag = '<|endofprompt|>';
   const userTag = '<|user|>';
@@ -121,29 +113,10 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: any): 
   `${endOfPromptTag}\n${assistantTag}`;
   console.log('input = ' + input);
 
-  const apiClient = await getAiApiClient();
+  // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
+  const llmService = await getLLMServiceInterface();
+  let documentContents = await llmService.callLLM(input);
 
-  const chatRequestBody = {
-    prompt: input,
-    stop_sequences: ['<|endofprompt|>'],
-    max_tokens: 2048, // Adjust the max_tokens as needed
-    parameters: {
-      command_source: CommandSource.Chat
-    }
-  };
-  console.log('chatRequestBody = ' + JSON.stringify(chatRequestBody));
-  const apiClientStream = await apiClient.getChatStream(chatRequestBody, 'generateOpenAPIv3Specifications');
-  console.log('apiClientStream = ' + JSON.stringify(apiClientStream));
-
-  let documentContents = '';
-  for await (const chunk of apiClientStream) {
-    const { done, text } = processGeneration(chunk);
-    documentContents += text;
-
-    if (done) {
-      break;
-    }
-  }
   console.log('--- documentContents = ' + documentContents);
 
   // Remove the Markdown code block formatting
@@ -159,3 +132,15 @@ const callLLM = async (systemPrompt: string, userPrompt: string, context: any): 
 
   return documentContents;
 }
+
+/**
+ * Retrieves the LLM (Large Language Model) service interface.
+ *
+ * This function asynchronously fetches the LLM service interface from the service provider
+ * using the specified service type and extension name.
+ *
+ * @returns {Promise<LLMServiceInterface>} A promise that resolves to the LLM service interface.
+ */
+export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => {
+  return ServiceProvider.getService(ServiceType.LLMService, 'salesforcedx-vscode-prompt-engineering');
+};
