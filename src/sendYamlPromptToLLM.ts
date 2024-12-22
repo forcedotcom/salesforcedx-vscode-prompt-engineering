@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, LLMServiceInterface, ServiceInstanceValidators } from '@salesforce/vscode-service-provider';
+import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 import * as path from "path";
