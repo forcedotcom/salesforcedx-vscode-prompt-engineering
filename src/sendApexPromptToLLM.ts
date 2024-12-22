@@ -6,7 +6,7 @@ import * as path from "path";
 
 /**
  * Reads the Apex file for which the OpenAPI v3 specification should be generated.
- * Calls callLLM() to send the prompt to the XGen LLM.
+ * Calls buildPromptAndCallLLM() to send the prompt to the XGen LLM.
  * Writes the response to a file.
  *
  * @throws Will throw an error if there is no active editor.
@@ -39,7 +39,7 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
 
           const userPrompt = await constructUserPrompt(editorText);
 
-          const documentContents = await callLLM(systemPrompt, userPrompt, [editorText]);
+          const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, [editorText]);
 
           console.log('documentContents = ~' + documentContents + '~');
 
@@ -87,12 +87,13 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
-const callLLM = async (systemPrompt: string, userPrompt: string, context: string[]): Promise<string> => {
+const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: string[]): Promise<string> => {
 
   const llm = process.env.LLM;
   console.log('llm = ' + llm);
 
   if (llm === "XGen") {
+    // Construct the input prompt to be sent to the XGen LLM
     const systemTag = '<|system|>';
     const endOfPromptTag = '<|endofprompt|>';
     const userTag = '<|user|>';
