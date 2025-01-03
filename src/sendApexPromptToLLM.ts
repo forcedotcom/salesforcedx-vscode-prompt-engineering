@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
-import { DEFAULT_INSTRUCTIONS, ETHICS_INSTRUCTIONS } from './constants';
+import { DEFAULT_INSTRUCTIONS } from './constants';
 import * as path from "path";
+import { getLLMServiceInterface } from './utilities';
 
 /**
  * Reads the Apex file for which the OpenAPI v3 specification should be generated.
@@ -35,7 +35,7 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
           const editorText = editorView.getText();
           console.log('document text = ' + editorText);
 
-          const systemPrompt = `${DEFAULT_INSTRUCTIONS}\n\n${ETHICS_INSTRUCTIONS}`
+          const systemPrompt = `${DEFAULT_INSTRUCTIONS}\n`
 
           const userPrompt = await constructUserPrompt(editorText);
 
@@ -161,15 +161,3 @@ const constructUserPrompt = async (editorText: string): Promise<string> => {
 
   return userPrompt;
 }
-
-/**
- * Retrieves the LLM (Large Language Model) service interface.
- *
- * This function asynchronously fetches the LLM service interface from the service provider
- * using the specified service type and extension name.
- *
- * @returns {Promise<LLMServiceInterface>} A promise that resolves to the LLM service interface.
- */
-export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => {
-  return ServiceProvider.getService(ServiceType.LLMService, 'salesforcedx-vscode-prompt-engineering');
-};
