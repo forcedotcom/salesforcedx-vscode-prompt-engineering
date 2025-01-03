@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 import * as path from 'path';
+import { cleanupYaml, getLLMServiceInterface, normalizeText } from './utilities';
 
 /**
  * Reads a YAML file containing the prompt components.
@@ -43,6 +43,18 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         console.log('inside sendYamlPromptToLLM() - context = ' + context);
 
         const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
+
+        const yamlDoc = YAML.parseDocument(documentContents);
+
+        if (!yamlDoc) {
+          throw Error('documentContents is not a valid YAML document');
+        }
+
+        const errors = yamlDoc.errors;
+
+        if (errors.length > 0) {
+          progress.report({message: `Generated YAML document has syntax errors: ${errors}`});
+        }
 
         console.log('documentContents = ~' + documentContents + '~');
 
@@ -95,6 +107,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
   console.log('inside buildPromptAndCallLLM() - context = ' + context);
   console.log('inside buildPromptAndCallLLM() - context.length = ' + context.length);
@@ -108,6 +121,7 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
   let input =
     `${systemTag}\n${normalizeText(systemPrompt)}\n${endOfPromptTag}\n${userTag}\n` + normalizeText(userPrompt) + '\n';
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   input += context.reduce((acc: string, curr: any, index: number) => {
     const contextName = 'context' + (index + 1);
     return acc + (normalizeText(curr[contextName].text) + '\n' + normalizeText(curr[contextName].context));
@@ -115,45 +129,15 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   // strip empty lines and remove trailing whitespace
   input = normalizeText(input);
+  // the training newline is required by the LLM
   input += `\n${endOfPromptTag}\n${assistantTag}\n`;
   console.log('input = ' + input);
 
   // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
   const llmService = await getLLMServiceInterface();
-  let documentContents = await llmService.callLLM(input);
+  const documentContents = await llmService.callLLM(input);
 
   console.log('--- documentContents = ' + documentContents);
 
-  // Remove the Markdown code block formatting
-  const index = documentContents.indexOf('openapi');
-  console.log('Index of "openapi" in documentContents:', index);
-  if (index !== -1) {
-    documentContents = documentContents.substring(index);
-  } else {
-    console.log('Could not find "openapi" in documentContents');
-    return 'An OpenAPI v3 specification cannot be generated for this Apex class.';
-  }
-  documentContents = documentContents.replace(/```$/, '');
-
-  return documentContents;
-};
-
-/**
- * Retrieves the LLM (Large Language Model) service interface.
- *
- * This function asynchronously fetches the LLM service interface from the service provider
- * using the specified service type and extension name.
- *
- * @returns {Promise<LLMServiceInterface>} A promise that resolves to the LLM service interface.
- */
-export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => {
-  return ServiceProvider.getService(ServiceType.LLMService, 'salesforcedx-vscode-prompt-engineering');
-};
-
-const normalizeText = (text: string): string => {
-  return text
-    .split('\n')
-    .map(line => line.trimEnd())
-    .filter(line => line.length > 0)
-    .join('\n');
+  return cleanupYaml(documentContents);
 };

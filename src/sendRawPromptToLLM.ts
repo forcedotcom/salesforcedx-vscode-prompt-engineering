@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getLLMServiceInterface } from './utilities';
 
 /**
  * Reads a YAML file containing the prompt components.
@@ -59,10 +59,7 @@ export const sendRawPromptToLLM = async (): Promise<void> => {
           fs.mkdirSync(resultsDir);
         }
 
-        const documentContentsFileName = path.join(
-          resultsDir,
-          `rawPrompt_${editorFilename}_${formattedDate}.yaml`
-        );
+        const documentContentsFileName = path.join(resultsDir, `rawPrompt_${editorFilename}_${formattedDate}.yaml`);
         console.log('documentContentsFileName = ' + documentContentsFileName);
         fs.writeFileSync(documentContentsFileName, documentContents);
       }
@@ -89,7 +86,6 @@ export const sendRawPromptToLLM = async (): Promise<void> => {
  * @returns The OpenAPI v3 specification for the Apex class.
  */
 const buildPromptAndCallLLM = async (rawPrompt: string): Promise<string> => {
-
   console.log('raw prompt = ' + rawPrompt);
   // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
   const llmService = await getLLMServiceInterface();
@@ -109,24 +105,4 @@ const buildPromptAndCallLLM = async (rawPrompt: string): Promise<string> => {
   documentContents = documentContents.replace(/```$/, '');
 
   return documentContents;
-};
-
-/**
- * Retrieves the LLM (Large Language Model) service interface.
- *
- * This function asynchronously fetches the LLM service interface from the service provider
- * using the specified service type and extension name.
- *
- * @returns {Promise<LLMServiceInterface>} A promise that resolves to the LLM service interface.
- */
-export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => {
-  return ServiceProvider.getService(ServiceType.LLMService, 'salesforcedx-vscode-prompt-engineering');
-};
-
-const normalizeText = (text: string): string => {
-  return text
-    .split('\n')
-    .map(line => line.trimEnd())
-    .filter(line => line.length > 0)
-    .join('\n');
 };
