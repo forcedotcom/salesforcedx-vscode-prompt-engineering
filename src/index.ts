@@ -7,13 +7,15 @@
 import * as vscode from 'vscode';
 import { sendApexPromptToLLM } from './sendApexPromptToLLM';
 import { sendYamlPromptToLLM } from './sendYamlPromptToLLM';
+import { sendRawPromptToLLM } from './sendRawPromptToLLM';
 import { generateSampleYamlPrompt } from './generateSampleYamlPrompt';
 import * as fs from 'fs';
-import * as path from "path";
+import * as path from 'path';
 
 const registerCommands = (): vscode.Disposable => {
-  const sendApexPromptToLLMCmd =  vscode.commands.registerCommand('sf.send.apex.prompt.to.llm', sendApexPromptToLLM);
-  const sendYamlPromptToLLMCmd =  vscode.commands.registerCommand('sf.send.yaml.prompt.to.llm', sendYamlPromptToLLM);
+  const sendApexPromptToLLMCmd = vscode.commands.registerCommand('sf.send.apex.prompt.to.llm', sendApexPromptToLLM);
+  const sendYamlPromptToLLMCmd = vscode.commands.registerCommand('sf.send.yaml.prompt.to.llm', sendYamlPromptToLLM);
+  const sendRawPromptToLLMCmd = vscode.commands.registerCommand('sf.send.raw.prompt.to.llm', sendRawPromptToLLM);
 
   const generateSampleYamlPromptCmd = vscode.commands.registerCommand('sf.generate.sample.yaml.prompt', async () => {
     const filename = await vscode.window.showInputBox({
@@ -50,7 +52,7 @@ const registerCommands = (): vscode.Disposable => {
     vscode.window.showInformationMessage(`YAML file '${filename}.yaml' created successfully at '${filepath}'.`);
   });
 
-  return vscode.Disposable.from(sendApexPromptToLLMCmd, sendYamlPromptToLLMCmd, generateSampleYamlPromptCmd);
+  return vscode.Disposable.from(sendApexPromptToLLMCmd, sendYamlPromptToLLMCmd, generateSampleYamlPromptCmd, sendRawPromptToLLMCmd);
 };
 
 export const activate = async (extensionContext: vscode.ExtensionContext) => {
