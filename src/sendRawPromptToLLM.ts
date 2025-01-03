@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
-import * as YAML from 'yaml';
 import * as path from 'path';
 
 /**
@@ -11,15 +10,15 @@ import * as path from 'path';
  *
  * @throws Will throw an error if there is no active editor.
  */
-export const sendYamlPromptToLLM = async (): Promise<void> => {
-  console.log('This is the sendYamlPromptToLLM() method');
+export const sendRawPromptToLLM = async (): Promise<void> => {
+  console.log('This is the sendRawPromptToLLM() method');
 
   try {
     // Show running notification to the user
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'SFDX: Send Prompt in Current YAML File to LLM',
+        title: 'SFDX: Send Raw Prompt in Current File to LLM',
         cancellable: false
       },
       async progress => {
@@ -35,14 +34,8 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         const editorText = editorView.getText();
 
         console.log('document text = ' + editorText);
-        const promptYaml = YAML.parse(editorText);
 
-        const systemPrompt = promptYaml.systemPrompt;
-        const userPrompt = promptYaml.userPrompt;
-        const context = promptYaml.context;
-        console.log('inside sendYamlPromptToLLM() - context = ' + context);
-
-        const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
+        const documentContents = await buildPromptAndCallLLM(editorText);
 
         console.log('documentContents = ~' + documentContents + '~');
 
@@ -68,7 +61,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
 
         const documentContentsFileName = path.join(
           resultsDir,
-          `documentContents_${editorFilename}_${formattedDate}.yaml`
+          `rawPrompt_${editorFilename}_${formattedDate}.yaml`
         );
         console.log('documentContentsFileName = ' + documentContentsFileName);
         fs.writeFileSync(documentContentsFileName, documentContents);
@@ -77,11 +70,11 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
 
     // Show success notification to the user
     vscode.window.showInformationMessage(
-      'SFDX: Send Prompt in Current YAML File to LLM command completed successfully.'
+      'SFDX: Send Raw Prompt in Current File to LLM command completed successfully.'
     );
   } catch (error) {
     // Show failure notification to the user
-    vscode.window.showErrorMessage('SFDX: Send Prompt in Current YAML File to LLM command failed: ' + error.message);
+    vscode.window.showErrorMessage('SFDX: Send Raw Prompt in Current File to LLM command failed: ' + error.message);
   }
 };
 
@@ -95,32 +88,12 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
-const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
-  console.log('inside buildPromptAndCallLLM() - context = ' + context);
-  console.log('inside buildPromptAndCallLLM() - context.length = ' + context.length);
+const buildPromptAndCallLLM = async (rawPrompt: string): Promise<string> => {
 
-  // Construct the input prompt to be sent to the LLM
-  const systemTag = '<|system|>';
-  const endOfPromptTag = '<|endofprompt|>';
-  const userTag = '<|user|>';
-  const assistantTag = '<|assistant|>';
-
-  let input =
-    `${systemTag}\n${normalizeText(systemPrompt)}\n${endOfPromptTag}\n${userTag}\n` + normalizeText(userPrompt) + '\n';
-
-  input += context.reduce((acc: string, curr: any, index: number) => {
-    const contextName = 'context' + (index + 1);
-    return acc + (normalizeText(curr[contextName].text) + '\n' + normalizeText(curr[contextName].context));
-  }, '');
-
-  // strip empty lines and remove trailing whitespace
-  input = normalizeText(input);
-  input += `\n${endOfPromptTag}\n${assistantTag}\n`;
-  console.log('input = ' + input);
-
+  console.log('raw prompt = ' + rawPrompt);
   // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
   const llmService = await getLLMServiceInterface();
-  let documentContents = await llmService.callLLM(input);
+  let documentContents = await llmService.callLLM(rawPrompt);
 
   console.log('--- documentContents = ' + documentContents);
 
