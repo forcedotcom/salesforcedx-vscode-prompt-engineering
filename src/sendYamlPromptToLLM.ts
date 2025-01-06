@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 import * as path from 'path';
+import { cleanupYaml, getLLMServiceInterface, normalizeText } from './utilities';
 
 /**
  * Reads a YAML file containing the prompt components.
@@ -48,7 +48,18 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         let returnValue = `prompt: |\n${addTabToEachLine(documentContents[0])}\n\n${documentContents[1]}\n\nideal_solution:\n${addTabToEachLine(YAML.stringify(promptYaml.ideal_solution))}`;
 
         console.log('returnValue = ~' + returnValue + '~');
-        // console.log('documentContents = ~' + documentContents + '~');
+
+        const yamlDoc = YAML.parseDocument(documentContents[1]);
+
+        if (!yamlDoc) {
+          throw Error('documentContents[1] is not a valid YAML document');
+        }
+
+        const errors = yamlDoc.errors;
+
+        if (errors.length > 0) {
+          progress.report({message: `Generated YAML document has syntax errors: ${errors}`});
+        }
 
         const now = new Date();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -99,6 +110,8 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string[]> => {
   console.log('inside buildPromptAndCallLLM() - context = ' + context);
   console.log('inside buildPromptAndCallLLM() - context.length = ' + context.length);
@@ -112,6 +125,7 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
   let input =
     `${systemTag}\n${normalizeText(systemPrompt)}\n${endOfPromptTag}\n${userTag}\n` + normalizeText(userPrompt) + '\n';
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   input += context.reduce((acc: string, curr: any, index: number) => {
     const contextName = 'context' + (index + 1);
   if (curr[contextName]) {
@@ -123,6 +137,7 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   // strip empty lines and remove trailing whitespace
   input = normalizeText(input);
+  // the trailing newline is required by the LLM
   input += `\n${endOfPromptTag}\n${assistantTag}\n`;
   console.log('input = ' + input);
 
@@ -132,39 +147,7 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   console.log('--- llmResult = ' + llmResult);
 
-  // Remove the Markdown code block formatting
-  const index = llmResult.indexOf('openapi');
-  console.log('Index of "openapi" in llmResult:', index);
-  if (index !== -1) {
-    llmResult = llmResult.substring(index);
-  } else {
-    console.log('Could not find "openapi" in llmResult');
-    return [input, 'An OpenAPI v3 specification cannot be generated for this Apex class.'];
-  }
-  llmResult = llmResult.replace(/```$/, '');
-
-  return [input, llmResult];
-};
-
-/**
- * Retrieves the LLM (Large Language Model) service interface.
- *
- * This function asynchronously fetches the LLM service interface from the service provider
- * using the specified service type and extension name.
- *
- * @returns {Promise<LLMServiceInterface>} A promise that resolves to the LLM service interface.
- */
-export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => {
-  return ServiceProvider.getService(ServiceType.LLMService, 'salesforcedx-vscode-prompt-engineering');
-};
-
-const normalizeText = (text: string): string => {
-  console.log('inside normalizeText() - text = ' + text);
-  return text
-    .split('\n')
-    .map(line => line.trimEnd())
-    .filter(line => line.length > 0)
-    .join('\n');
+  return [input, cleanupYaml(llmResult)];
 };
 
 const addTabToEachLine = (text: string): string => {
