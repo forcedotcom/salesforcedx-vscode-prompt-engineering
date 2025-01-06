@@ -37,14 +37,18 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         console.log('document text = ' + editorText);
         const promptYaml = YAML.parse(editorText);
 
-        const systemPrompt = promptYaml.systemPrompt;
-        const userPrompt = promptYaml.userPrompt;
-        const context = promptYaml.context;
-        console.log('inside sendYamlPromptToLLM() - context = ' + context);
+        const systemPrompt = promptYaml.experiment.system_prompt;
+        const userPrompt = promptYaml.experiment.user_prompt;
+        const context = promptYaml.experiment.context;
+        console.log('inside sendYamlPromptToLLM() - systemPrompt = ' + systemPrompt);
+        console.log('inside sendYamlPromptToLLM() - userPrompt = ' + userPrompt);
+        console.log('inside sendYamlPromptToLLM() - context = ' + JSON.stringify(context));
 
-        const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
+        let documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
+        let returnValue = `prompt: |\n${addTabToEachLine(documentContents[0])}\n\n${documentContents[1]}\n\nideal_solution:\n${addTabToEachLine(YAML.stringify(promptYaml.ideal_solution))}`;
 
-        console.log('documentContents = ~' + documentContents + '~');
+        console.log('returnValue = ~' + returnValue + '~');
+        // console.log('documentContents = ~' + documentContents + '~');
 
         const now = new Date();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -71,7 +75,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
           `documentContents_${editorFilename}_${formattedDate}.yaml`
         );
         console.log('documentContentsFileName = ' + documentContentsFileName);
-        fs.writeFileSync(documentContentsFileName, documentContents);
+        fs.writeFileSync(documentContentsFileName, returnValue);
       }
     );
 
@@ -95,7 +99,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
-const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
+const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string[]> => {
   console.log('inside buildPromptAndCallLLM() - context = ' + context);
   console.log('inside buildPromptAndCallLLM() - context.length = ' + context.length);
 
@@ -110,8 +114,12 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   input += context.reduce((acc: string, curr: any, index: number) => {
     const contextName = 'context' + (index + 1);
+  if (curr[contextName]) {
     return acc + (normalizeText(curr[contextName].text) + '\n' + normalizeText(curr[contextName].context));
-  }, '');
+  } else {
+    throw Error('Context is missing');
+  }
+}, '');
 
   // strip empty lines and remove trailing whitespace
   input = normalizeText(input);
@@ -120,22 +128,22 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
   const llmService = await getLLMServiceInterface();
-  let documentContents = await llmService.callLLM(input);
+  let llmResult = await llmService.callLLM(input);
 
-  console.log('--- documentContents = ' + documentContents);
+  console.log('--- llmResult = ' + llmResult);
 
   // Remove the Markdown code block formatting
-  const index = documentContents.indexOf('openapi');
-  console.log('Index of "openapi" in documentContents:', index);
+  const index = llmResult.indexOf('openapi');
+  console.log('Index of "openapi" in llmResult:', index);
   if (index !== -1) {
-    documentContents = documentContents.substring(index);
+    llmResult = llmResult.substring(index);
   } else {
-    console.log('Could not find "openapi" in documentContents');
-    return 'An OpenAPI v3 specification cannot be generated for this Apex class.';
+    console.log('Could not find "openapi" in llmResult');
+    return [input, 'An OpenAPI v3 specification cannot be generated for this Apex class.'];
   }
-  documentContents = documentContents.replace(/```$/, '');
+  llmResult = llmResult.replace(/```$/, '');
 
-  return documentContents;
+  return [input, llmResult];
 };
 
 /**
@@ -151,9 +159,14 @@ export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => 
 };
 
 const normalizeText = (text: string): string => {
+  console.log('inside normalizeText() - text = ' + text);
   return text
     .split('\n')
     .map(line => line.trimEnd())
     .filter(line => line.length > 0)
     .join('\n');
+};
+
+const addTabToEachLine = (text: string): string => {
+  return text.split('\n').map(line => '  ' + line).join('\n');
 };
