@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 import * as path from 'path';
-import { cleanupYaml, getLLMServiceInterface, normalizeText } from './utilities';
+import { cleanupYaml, getLLMServiceInterface, normalizeText, addTabToEachLine } from './utilities';
 
 /**
  * Reads a YAML file containing the prompt components.
@@ -148,8 +148,4 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
   console.log('--- llmResult = ' + llmResult);
 
   return [input, cleanupYaml(llmResult)];
-};
-
-const addTabToEachLine = (text: string): string => {
-  return text.split('\n').map(line => '  ' + line).join('\n');
 };

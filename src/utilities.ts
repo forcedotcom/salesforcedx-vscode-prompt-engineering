@@ -34,3 +34,7 @@ export const cleanupYaml = (yaml: string): string => {
     .filter(line => !/^```$/.test(line))
     .join('\n');
 };
+
+export const addTabToEachLine = (text: string): string => {
+  return text.split('\n').map(line => '  ' + line).join('\n');
+};
