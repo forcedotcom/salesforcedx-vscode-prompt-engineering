@@ -37,7 +37,6 @@ export const SAMPLE_YAML_PROMPT =
 
   user_prompt: |
     Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.
-    When you return Id in a SOQL query, it has \`type: Id\`.
 
   context:
     - context1:
