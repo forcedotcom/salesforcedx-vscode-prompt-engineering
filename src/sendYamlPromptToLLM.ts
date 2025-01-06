@@ -129,7 +129,7 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   // strip empty lines and remove trailing whitespace
   input = normalizeText(input);
-  // the training newline is required by the LLM
+  // the trailing newline is required by the LLM
   input += `\n${endOfPromptTag}\n${assistantTag}\n`;
   console.log('input = ' + input);
 
