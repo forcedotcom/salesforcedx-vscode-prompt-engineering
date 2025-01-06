@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { ServiceProvider, ServiceType, LLMServiceInterface } from '@salesforce/vscode-service-provider';
 import * as fs from 'fs';
-import { DEFAULT_INSTRUCTIONS, ETHICS_INSTRUCTIONS } from './constants';
+import { DEFAULT_INSTRUCTIONS } from './constants';
 import * as path from "path";
+import { cleanupYaml, getLLMServiceInterface } from './utilities';
 
 /**
  * Reads the Apex file for which the OpenAPI v3 specification should be generated.
@@ -35,7 +35,7 @@ export const sendApexPromptToLLM = async (): Promise<void> => {
           const editorText = editorView.getText();
           console.log('document text = ' + editorText);
 
-          const systemPrompt = `${DEFAULT_INSTRUCTIONS}\n\n${ETHICS_INSTRUCTIONS}`
+          const systemPrompt = `${DEFAULT_INSTRUCTIONS}\n`
 
           const userPrompt = await constructUserPrompt(editorText);
 
@@ -110,25 +110,13 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
     }
 
     input +=
-    `\n\`\`\`\n${endOfPromptTag}\n${assistantTag}`;
+    `\n\`\`\`\n${endOfPromptTag}\n${assistantTag}\n`;
     console.log('input = ' + input);
 
     // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
     const llmService = await getLLMServiceInterface();
-    let documentContents = await llmService.callLLM(input);
-
-    // Remove the Markdown code block formatting
-    const index = documentContents.indexOf('openapi');
-    console.log('Index of "openapi" in documentContents:', index);
-    if (index !== -1) {
-      documentContents = documentContents.substring(index);
-    } else {
-      console.log('Could not find "openapi" in documentContents');
-      return 'An OpenAPI v3 specification cannot be generated for this Apex class.';
-    }
-    documentContents = documentContents.replace(/```$/, '');
-
-    return documentContents;
+    const documentContents = await llmService.callLLM(input);
+    return cleanupYaml(documentContents);
   }
 
   else if (llm === "OpenAI") {
@@ -161,15 +149,3 @@ const constructUserPrompt = async (editorText: string): Promise<string> => {
 
   return userPrompt;
 }
-
-/**
- * Retrieves the LLM (Large Language Model) service interface.
- *
- * This function asynchronously fetches the LLM service interface from the service provider
- * using the specified service type and extension name.
- *
- * @returns {Promise<LLMServiceInterface>} A promise that resolves to the LLM service interface.
- */
-export const getLLMServiceInterface = async (): Promise<LLMServiceInterface> => {
-  return ServiceProvider.getService(ServiceType.LLMService, 'salesforcedx-vscode-prompt-engineering');
-};
