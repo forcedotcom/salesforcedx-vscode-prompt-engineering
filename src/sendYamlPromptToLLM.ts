@@ -44,8 +44,8 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         console.log('inside sendYamlPromptToLLM() - userPrompt = ' + userPrompt);
         console.log('inside sendYamlPromptToLLM() - context = ' + JSON.stringify(context));
 
-        let documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
-        let returnValue = `prompt: |\n${addTabToEachLine(documentContents[0])}\n\n${documentContents[1]}\n\nideal_solution:\n${addTabToEachLine(YAML.stringify(promptYaml.ideal_solution))}`;
+        const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
+        const returnValue = `prompt: |\n${addTabToEachLine(documentContents[0])}\n\n${documentContents[1]}\n\nideal_solution:\n${addTabToEachLine(YAML.stringify(promptYaml.ideal_solution))}`;
 
         console.log('returnValue = ~' + returnValue + '~');
 
@@ -143,7 +143,7 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
   const llmService = await getLLMServiceInterface();
-  let llmResult = await llmService.callLLM(input);
+  const llmResult = await llmService.callLLM(input);
 
   console.log('--- llmResult = ' + llmResult);
 
