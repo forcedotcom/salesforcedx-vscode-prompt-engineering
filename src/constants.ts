@@ -1,7 +1,7 @@
 import { addTabToEachLine } from "./utilities";
 
-export const DEFAULT_INSTRUCTIONS = `
-  You are Dev Assistant, an AI coding assistant by Salesforce.
+export const DEFAULT_INSTRUCTIONS =
+  `You are Dev Assistant, an AI coding assistant by Salesforce.
   Generate OpenAPI v3 specs from Apex classes in YAML format. Paths should be /{ClassName}/{MethodName}.
   Non-primitives parameters and responses must have a "#/components/schemas" entry created.
   Each method should have a $ref entry pointing to the generated "#/components/schemas" entry.
@@ -20,7 +20,8 @@ export const DEFAULT_INSTRUCTIONS = `
 export const SAMPLE_YAML_PROMPT =
 `experiment:
 
-  system_prompt: |${addTabToEachLine(DEFAULT_INSTRUCTIONS)}
+  system_prompt: |
+  ${addTabToEachLine(DEFAULT_INSTRUCTIONS)}
 
   user_prompt: |
     Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.
