@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
 import * as path from 'path';
-import { cleanupYaml, getLLMServiceInterface, normalizeText } from './utilities';
+import { cleanupYaml, getLLMServiceInterface, normalizeText, addTabToEachLine } from './utilities';
 
 /**
  * Reads a YAML file containing the prompt components.
@@ -37,17 +37,22 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         console.log('document text = ' + editorText);
         const promptYaml = YAML.parse(editorText);
 
-        const systemPrompt = promptYaml.systemPrompt;
-        const userPrompt = promptYaml.userPrompt;
-        const context = promptYaml.context;
-        console.log('inside sendYamlPromptToLLM() - context = ' + context);
+        const systemPrompt = promptYaml.experiment.system_prompt;
+        const userPrompt = promptYaml.experiment.user_prompt;
+        const context = promptYaml.experiment.context;
+        console.log('inside sendYamlPromptToLLM() - systemPrompt = ' + systemPrompt);
+        console.log('inside sendYamlPromptToLLM() - userPrompt = ' + userPrompt);
+        console.log('inside sendYamlPromptToLLM() - context = ' + JSON.stringify(context));
 
         const documentContents = await buildPromptAndCallLLM(systemPrompt, userPrompt, context);
+        const returnValue = `prompt: |\n${addTabToEachLine(documentContents[0])}\n\n${documentContents[1]}\n\nideal_solution:\n${addTabToEachLine(YAML.stringify(promptYaml.ideal_solution))}`;
 
-        const yamlDoc = YAML.parseDocument(documentContents);
+        console.log('returnValue = ~' + returnValue + '~');
+
+        const yamlDoc = YAML.parseDocument(documentContents[1]);
 
         if (!yamlDoc) {
-          throw Error('documentContents is not a valid YAML document');
+          throw Error('documentContents[1] is not a valid YAML document');
         }
 
         const errors = yamlDoc.errors;
@@ -55,8 +60,6 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
         if (errors.length > 0) {
           progress.report({message: `Generated YAML document has syntax errors: ${errors}`});
         }
-
-        console.log('documentContents = ~' + documentContents + '~');
 
         const now = new Date();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -83,7 +86,7 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
           `documentContents_${editorFilename}_${formattedDate}.yaml`
         );
         console.log('documentContentsFileName = ' + documentContentsFileName);
-        fs.writeFileSync(documentContentsFileName, documentContents);
+        fs.writeFileSync(documentContentsFileName, returnValue);
       }
     );
 
@@ -107,8 +110,9 @@ export const sendYamlPromptToLLM = async (): Promise<void> => {
  * @param context The Apex class that the OpenAPI v3 specification should be generated for, and any additional context.
  * @returns The OpenAPI v3 specification for the Apex class.
  */
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string> => {
+const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, context: any): Promise<string[]> => {
   console.log('inside buildPromptAndCallLLM() - context = ' + context);
   console.log('inside buildPromptAndCallLLM() - context.length = ' + context.length);
 
@@ -124,8 +128,12 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   input += context.reduce((acc: string, curr: any, index: number) => {
     const contextName = 'context' + (index + 1);
+  if (curr[contextName]) {
     return acc + (normalizeText(curr[contextName].text) + '\n' + normalizeText(curr[contextName].context));
-  }, '');
+  } else {
+    throw Error('Context is missing');
+  }
+}, '');
 
   // strip empty lines and remove trailing whitespace
   input = normalizeText(input);
@@ -135,9 +143,9 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 
   // Initialize the LLM service interface, then call the LLM service with the constructed input and get the response
   const llmService = await getLLMServiceInterface();
-  const documentContents = await llmService.callLLM(input);
+  const llmResult = await llmService.callLLM(input);
 
-  console.log('--- documentContents = ' + documentContents);
+  console.log('--- llmResult = ' + llmResult);
 
-  return cleanupYaml(documentContents);
+  return [input, cleanupYaml(llmResult)];
 };
