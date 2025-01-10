@@ -143,9 +143,5 @@ const constructUserPrompt = async (editorText: string): Promise<string> => {
     userPrompt += 'Methods annotated with @HttpGet or @HttpDelete must have no parameters. This is because GET and DELETE requests have no request body, so there\'s nothing to deserialize.\n';
   }
 
-  if (editorText.includes('SELECT Id')) {
-    userPrompt += 'When you return Id in a SOQL query, it has `type: Id`.\n';
-  }
-
   return userPrompt;
 }
