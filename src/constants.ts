@@ -201,26 +201,19 @@ export const SAMPLE_YAML_PROMPT =
           \`\`\`
 
 ideal_solution:
-  dummy_ideal_solution: true
   openapi: 3.0.0
   info:
-    title: OpenAPI Challenge with Apexdocs
-    version: 1.0.0
-    description: >
-      This API provides access to various methods in the \`OpenAPIChallengeWithApexdocs\` class.
-      These methods are documented using Javadoc comments and can be used to generate API documentation.
-    license:
-      name: MIT
-      url: https://opensource.org/licenses/MIT
+    title: Class4 API
+    version: '1.0.0'
   paths:
-    /OpenAPIChallengeWithApexdocs/getWelcomeMessage:
+    /Class4/getWelcomeMessage:
       get:
-        summary: Returns a welcome message for the given name.
+        summary: Simple method with a primitive return type and single parameter
+        description: This method returns a welcome message for the given name.
         parameters:
           - name: name
             in: query
             required: true
-            description: The name to include in the welcome message.
             schema:
               type: string
         responses:
@@ -230,90 +223,77 @@ ideal_solution:
               application/json:
                 schema:
                   type: string
-    /OpenAPIChallengeWithApexdocs/getAllAccounts:
+    /Class4/getAllAccounts:
       get:
-        summary: Returns a list of all accounts in the database.
+        summary: Method that performs a simple SOQL query and returns a list of records
+        description: This method returns the Id and Name fields of the first 100 accounts in the org.
         responses:
           '200':
-            description: A list of all accounts in the database.
+            description: A list of the Id and Name fields of the first 100 accounts in the org.
             content:
               application/json:
                 schema:
                   type: array
                   items:
                     $ref: '#/components/schemas/Account'
-    /OpenAPIChallengeWithApexdocs/getUserDetails:
+    /Class4/getUserDetails:
       get:
-        summary: Returns a map of user details for the given user ID.
+        summary: Method that returns a synthetic data structure with nested types
+        description: This method returns the Id, Name, and Email fields for the given user ID.
         parameters:
           - name: userId
             in: query
             required: true
-            description: The ID of the user to retrieve details for.
             schema:
               type: string
         responses:
           '200':
-            description: A map of user details for the given user ID.
+            description: A map of user details (Id, Name, Email) for the given user ID.
             content:
               application/json:
                 schema:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    name:
-                      type: string
-                    email:
-                      type: string
-    /OpenAPIChallengeWithApexdocs/getActiveCases:
+                  $ref: '#/components/schemas/UserDetails'
+          '404':
+            description: User not found
+    /Class4/getActiveCases:
       get:
-        summary: Returns a list of case details for the given account ID.
+        summary: Method with a more complex SOQL-based synthetic type as the return type
+        description: This method returns a list of case details (Case Id, Case Number, Status, Subject) for the given account ID.
         parameters:
           - name: accountId
             in: query
             required: true
-            description: The ID of the account to retrieve case details for.
             schema:
               type: string
         responses:
           '200':
-            description: A list of case details for the given account ID.
+            description: A list of case details (Case Id, Case Number, Status, Subject) for the given account ID.
             content:
               application/json:
                 schema:
                   type: array
                   items:
-                    type: object
-                    properties:
-                      caseId:
-                        type: string
-                      caseNumber:
-                        type: string
-                      status:
-                        type: string
-                      subject:
-                        type: string
-    /OpenAPIChallengeWithApexdocs/updateContactDetails:
-      get:
-        summary: Updates the contact details for the given contact ID.
+                    $ref: '#/components/schemas/CaseDetails'
+            '404':
+              description: Account not found
+    /Class4/updateContactDetails:
+      post:
+        summary: Method demonstrating custom HTTP intent based on the action type, with parameters and synthetic return
+        description: This method updates the contact details (Email, Phone) for the given contact ID.
         parameters:
           - name: contactId
             in: query
             required: true
-            description: The ID of the contact to update.
             schema:
               type: string
           - name: email
             in: query
             required: true
-            description: The new email address for the contact.
             schema:
               type: string
           - name: phone
             in: query
             required: true
-            description: The new phone number for the contact.
             schema:
               type: string
         responses:
@@ -323,50 +303,78 @@ ideal_solution:
               application/json:
                 schema:
                   type: string
-    /OpenAPIChallengeWithApexdocs/getAccountSummaryWithOpportunities:
+          '404':
+            description: Contact not found
+    /Class4/getAccountSummaryWithOpportunities:
       get:
-        summary: Returns a map of account summary details for the given account ID, including a list of opportunities.
+        summary: Complex example with multiple nested SOQL queries and conditionally assembled result
+        description: This method returns a map of account summary details (Account Id, Account Name, Industry, Opportunities) for the given account ID.
         parameters:
           - name: accountId
             in: query
             required: true
-            description: The ID of the account to retrieve summary details for.
             schema:
               type: string
         responses:
           '200':
-            description: A map of account summary details for the given account ID.
+            description: A map of account summary details (Account Id, Account Name, Industry, Opportunities) for the given account ID.
             content:
               application/json:
                 schema:
-                  type: object
-                  properties:
-                    accountId:
-                      type: string
-                    accountName:
-                      type: string
-                    industry:
-                      type: string
-                    opportunities:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          opportunityId:
-                            type: string
-                          name:
-                            type: string
-                          stage:
-                            type: string
-                          amount:
-                            type: number
+                  $ref: '#/components/schemas/AccountSummary'
+          '404':
+            description: Account not found
   components:
     schemas:
       Account:
         type: object
         properties:
           Id:
-            type: Id
+            type: string
           Name:
             type: string
+      UserDetails:
+        type: object
+        properties:
+          Id:
+            type: string
+          Name:
+            type: string
+          Email:
+            type: string
+      CaseDetails:
+        type: object
+        properties:
+          caseId:
+            type: string
+          caseNumber:
+            type: string
+          status:
+            type: string
+          subject:
+            type: string
+      AccountSummary:
+        type: object
+        properties:
+          accountId:
+            type: string
+          accountName:
+            type: string
+          industry:
+            type: string
+          opportunities:
+            type: array
+            items:
+              $ref: '#/components/schemas/Opportunity'
+      Opportunity:
+        type: object
+        properties:
+          opportunityId:
+            type: string
+          name:
+            type: string
+          stage:
+            type: string
+          amount:
+            type: number
 `;
