@@ -135,8 +135,15 @@ const buildPromptAndCallLLM = async (systemPrompt: string, userPrompt: string, c
 const constructUserPrompt = async (editorText: string): Promise<string> => {
   let userPrompt = '';
 
-  if (editorText.includes('@AuraEnabled')) {
-    userPrompt += 'Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.\n';
+  // if (editorText.includes('@AuraEnabled')) {
+  //   userPrompt += 'Only include methods that have the @AuraEnabled annotation in the paths of the OpenAPI v3 specification.\n';
+  // }
+
+  if (editorText.includes('@RestResource')) {
+    userPrompt += 'Only include methods that have @HttpGet, @HttpPost, @HttpPatch, @HttpPut, or @HttpDelete annotations in the paths of the OpenAPI v3 specification. Unannotated methods are utility methods.\n';
+    // userPrompt += 'Ignore unannotated methods. They are utility methods.\n';
+    // userPrompt += 'Method that are not annotated with @HttpGet, @HttpPost, @HttpPatch, @HttpPut, or @HttpDelete should NOT be included in the OpenAPI v3 specification.\n';
+    // userPrompt += 'Include only the handleMethod() method in the paths of the OpenAPI v3 specification.\n';
   }
 
   if (editorText.includes('@HttpGet') || editorText.includes('@HttpDelete')) {
