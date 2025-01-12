@@ -155,6 +155,15 @@ const constructUserPrompt = async (editorText: string): Promise<string> => {
   // For Sample Prompt #8 - this works
   // userPrompt += 'Only include the getLapstatusCheck(), errorPost(), errorPatch(), errorPut(), and errorDelete() methods in the paths of the OpenAPI v3 specification.\n';
 
+  // For Sample Prompt #9
+  // userPrompt += 'Only include the getClass9BList() method in the paths of the OpenAPI v3 specification.\n';
+
+  // For Sample Prompt #10
+  // userPrompt += 'Only include the doPost() and doGet() methods in the paths of the OpenAPI v3 specification.\n';
+
+  // For Sample Prompt #5
+  // userPrompt += 'Only include the postWelcomeMessage() and getContactDetails() methods in the paths of the OpenAPI v3 specification.\n';
+
   if (editorText.includes('@HttpGet') || editorText.includes('@HttpDelete')) {
     userPrompt += 'Methods annotated with @HttpGet or @HttpDelete must have no parameters. This is because GET and DELETE requests have no request body, so there\'s nothing to deserialize.\n';
   }
